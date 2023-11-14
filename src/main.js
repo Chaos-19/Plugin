@@ -60,7 +60,7 @@ class AcodePlugin {
 
             this.webViewer = tag("iframe", {
                 className: "web-viewer",
-                src: "https://chaos-19.github.io/React-weather-app/"
+                src: activeFile.location
             });
             this.webViewer.style = `
                 position: absolute;
@@ -106,7 +106,7 @@ class AcodePlugin {
             this.heightController.innerHTML = `
                <button class="plus-height">+</button>
                 <input type="range" name="heightAdjuster" id="heightAdjuster" value="5" min="1" max="9" />
-               <button class="minus-height" onclick="minus('#heightAdjuster')">-</button>
+               <button class="minus-height">-</button>
             `;
             this.zoomController = tag("div", {
                 className: "heightController"
@@ -125,7 +125,30 @@ class AcodePlugin {
                 const range = this.controller.querySelector(element);
                 range.value = parseInt(range.value) - 10;
             };
-            
+
+            this.controller.addEventListener("click", e => {
+                switch (e.target.className) {
+                    case "plus-width":
+                        this.plus("#widthAdjuster");
+                        break;
+                    case "minus-width":
+                        this.minus("#widthAdjuster");
+                        break;
+                    case "plus-height":
+                        this.plus("#heightAdjuster");
+                        break;
+                    case "minus-height":
+                        this.minus("#heightAdjuster");
+                        break;
+                    case "zoom-in":
+                        this.plus("#zoomAdjuster");
+                        break;
+                    case "zoom-out":
+                        this.minus("#zoomAdjuster");
+                        break;
+                    default:
+                }
+            });
             seachBtn.onclick = function (e) {};
 
             // Global styles
