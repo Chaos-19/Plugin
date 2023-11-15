@@ -3,6 +3,8 @@ import plugin from "../plugin.json";
 const alert = acode.require("alert");
 
 const toInternalUrl = acode.require("toInternalUrl");
+const settings = acode.require("settings");
+const theme = settings.get("customTheme");
 const { activeFile } = editorManager;
 let browseUrl = "";
 
@@ -19,6 +21,7 @@ class AcodePlugin {
         try {
             this.setupReloadBtn();
             $page.id = "example-plugin-respon";
+
             const seachBtn = tag("span", {
                 className: "icon search",
                 dataset: {
@@ -71,7 +74,8 @@ class AcodePlugin {
                 width: 100%;
                 -webkit-transform-origin: 0 0;
                 -ms-transform: : 0 0;
-                transform-origin: : 0 0;`;
+                transform-origin: : 0 0;
+                border:0;`;
 
             this.iframeContainer = tag("div", {
                 className: "iframe-container"
@@ -79,51 +83,88 @@ class AcodePlugin {
             this.iframeContainer.style = `
                     position: relative;
                     display: block;
-                    width:100%;
-                    height: 100%;
+                    width:99.2%;
+                    height: 300px;
                     padding: 0;
-                    overflow: hidden;`;
+                    overflow: hidden;
+                    background:#fff;
+                    color:#000;`;
 
             this.controller = tag("div", {
                 className: "controller"
             });
             this.controller.style = `
-                  width:100%;
+                   width:100%;
                    position:absolute;
                    bottom:0;
+                   left: 0;
+                   right: 0;
+                   background:rgba(0, 0, 44, 0.6)
                   `;
             this.widthController = tag("div", {
                 className: "widthController"
             });
             this.widthController.innerHTML = `
-                <button class="plus-width">+</button>
-                  <input type="range" name="widthAdjuster" id="widthAdjuster" value="5" min="1" max="9" />
                 <button class="minus-width">-</button>
+                 <input type="range" name="widthAdjuster" id="widthAdjuster" value="412" min="412" max="4000" />
+                <button class="plus-width">+</button>
+            <span class="info width-info">width:412px</span>
                 `;
             this.heightController = tag("div", {
                 className: "heightController"
             });
             this.heightController.innerHTML = `
-               <button class="plus-height">+</button>
-                <input type="range" name="heightAdjuster" id="heightAdjuster" value="5" min="1" max="9" />
                <button class="minus-height">-</button>
+                <input type="range" name="heightAdjuster" id="heightAdjuster" value="300" min="100" max="810" />
+               <button class="plus-height">+</button>
+               <span class="info height-info">height:300px</span>
             `;
             this.zoomController = tag("div", {
                 className: "heightController"
             });
             this.zoomController.innerHTML = `
-               <button class="zoom-in">+</button>
-                <input type="range" name="zoomAdjuster" id="zoomAdjuster" value="5" min="1" max="9" />
                <button class="zoom-out">-</button>
+                <input type="range" name="zoomAdjuster" id="zoomAdjuster" value="5" min="1" max="9" />
+               <button class="zoom-in">+</button>
+             <span class="info zoom-info">zoom:0%</span>
             `;
 
             this.plus = element => {
                 const range = this.controller.querySelector(element);
-                range.value = parseInt(range.value) + 10;
+                range.value = parseInt(range.value) + 100;
             };
             this.minus = element => {
                 const range = this.controller.querySelector(element);
                 range.value = parseInt(range.value) - 10;
+            };
+
+            const setStyles = (element, styles) => {
+                var prop;
+                for (prop in styles) {
+                    element.style[prop] = styles[prop];
+                }
+            };
+
+            const scale = (width, scal = 900) => {
+                var scale = width / scal;
+
+                setStyles($page.querySelector("iframe"), {
+                    width: 100 / scale + "%",
+                    height: 100 / scale + "%",
+                    webkitTransform: "scale(" + scale + ")",
+                    msTransform: "scale(" + scale + ")",
+                    transform: "scale(" + scale + ")"
+                });
+            };
+
+            const getElementWidth = () => {
+                const container = $page.querySelector(".iframe-container");
+                const { width, paddingLeft, paddingRight } =
+                    window.getComputedStyle(container);
+                return (
+                    parseFloat(width) -
+                    (parseFloat(paddingLeft) + parseFloat(paddingRight))
+                );
             };
 
             this.controller.addEventListener("click", e => {
@@ -149,8 +190,36 @@ class AcodePlugin {
                     default:
                 }
             });
-            seachBtn.onclick = function (e) {};
 
+            this.widthController
+                .querySelector("#widthAdjuster")
+                .addEventListener("input", e => {
+                    scale(getElementWidth(), e.target.value);
+                    $page.querySelector(".width-info").textContent =
+                        e.target.value + "px";
+                });
+            this.heightController
+                .querySelector("#heightAdjuster")
+                .addEventListener("input", e => {
+                    $page.querySelector(
+                        ".iframe-container"
+                    ).style.height = `${e.target.value}px`;
+                    $page.querySelector(".height-info").textContent =
+                        e.target.value + "px";
+                });
+            this.zoomController
+                .querySelector("#zoomAdjuster")
+                .addEventListener("change", e => {
+                    alert(e.target.value);
+                });
+            seachBtn.onclick = function (e) {
+                const viewer = $page.querySelector(".web-viewer");
+
+                viewer.src = search.value;
+            };
+            $page.style = `
+                background:rgba(0, 0, 44, 0.2)
+                `;
             // Global styles
             this.$style = tag("style", {
                 textContent: `
@@ -158,8 +227,12 @@ class AcodePlugin {
                      border:none;
                     }
                     .widthController,
-                    .heightController {
-                      border: 2px solid red;
+                    .heightController,
+                    .zoomController{
+                      width:85%;
+                      margin:auto;
+                     
+                      position: relative;
                       display: flex;
                       align-items: center;
                       justify-content: space-around;
@@ -168,13 +241,20 @@ class AcodePlugin {
                 
                     .widthController input[type="range"],
                     .heightController input[type="range"] {
-                      width:80%;
+                      width:78%;
                     }
+                   
                 
                     .controller button {
                       font-size: 20px;
                       padding: 3px 8px;
                     }
+                     .info{
+                        display:block;
+                        position: absolute;
+                        top: 0;
+                        left: 20%;
+                      }
                 `
             });
             this.iframeContainer.append(this.webViewer);
